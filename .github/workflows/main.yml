@@ -1,0 +1,41 @@
+name: Pyzule Build IPA
+on:
+  workflow_dispatch:
+    inputs:
+      ipa_url:
+        description: '元のIPAファイルのURL'
+        required: true
+      tweak_url:
+        description: '合体させたいTweak（.deb等）のURL'
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Pyzule
+        run: |
+          pip install pyzule-rw || pip install pyzule
+
+      - name: Download Files
+        run: |
+          curl -L "${{ github.event.inputs.ipa_url }}" -o app.ipa
+          curl -L "${{ github.event.inputs.tweak_url }}" -o tweak.deb
+
+      - name: Merge Files
+        run: |
+          pyzule -i app.ipa -o output.ipa -f tweak.deb
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Merged-IPA
+          path: output.ipa
